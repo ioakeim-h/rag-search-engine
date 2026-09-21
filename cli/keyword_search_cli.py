@@ -1,5 +1,12 @@
 import argparse
 
+from lib.keyword_search import search_movies
+
+from lib.search_utils import (
+    DATA_PATH,
+    DEFAULT_SEARCH_LIMIT
+)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -13,6 +20,11 @@ def main() -> None:
     match args.command:
         case "search":
             print(f"Searching for: {args.query}")
+            results = search_movies(DATA_PATH, args.query, search_limit=DEFAULT_SEARCH_LIMIT)
+
+            for i, item in enumerate(results):
+                print(f"{i+1}. {item}")
+
         case _:
             parser.print_help()
 
