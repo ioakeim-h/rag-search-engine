@@ -5,7 +5,8 @@ PROJECT_ROOT = os.path.join(
     "rag-search-engine"
 )
 
-DATA_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
+MOVIES_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
+STOPWORDS_PATH = os.path.join(PROJECT_ROOT, "data", "stopwords.txt")
 
 DEFAULT_SEARCH_LIMIT = 5
 

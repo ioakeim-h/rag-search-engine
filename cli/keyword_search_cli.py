@@ -4,7 +4,7 @@ from lib.utils import read_json
 from lib.keyword_search import search_by_keyword
 
 from config import (
-    DATA_PATH,
+    MOVIES_PATH,
     DEFAULT_SEARCH_LIMIT
 )
 
@@ -23,7 +23,7 @@ def main() -> None:
         case "search":
 
             print(f"Searching for: {args.query}")
-            movies = read_json(DATA_PATH)["movies"]
+            movies = read_json(MOVIES_PATH)["movies"]
          
             results = search_by_keyword(
                 data = movies,
