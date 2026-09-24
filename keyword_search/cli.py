@@ -1,11 +1,14 @@
+# Run: uv run python -m keyword_search.cli <command> <args>
+
 import argparse
 
-from lib.utils import read_json
-from lib.keyword_search import search_by_keyword
+from utils import read_json
+from keyword_search.search import search_by_keyword
+from keyword_search.inverted_index import build_command
 
 from config import (
+    DEFAULT_SEARCH_LIMIT,
     MOVIES_PATH,
-    DEFAULT_SEARCH_LIMIT
 )
 
 
@@ -16,12 +19,18 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using keywords")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    subparsers.add_parser("build", help="Build the inverted index")
+    
     args = parser.parse_args()
 
     match args.command:
 
-        case "search":
+        case "build":
+            print("Building inverted index...")
+            build_command()
+            print("Inverted index built successfully.")
 
+        case "search":
             print(f"Searching for: {args.query}")
             movies = read_json(MOVIES_PATH)["movies"]
          
