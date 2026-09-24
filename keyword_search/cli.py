@@ -4,7 +4,7 @@ import argparse
 
 from utils import read_json
 from keyword_search.search import search_by_keyword
-from keyword_search.inverted_index import build_command
+from keyword_search.inverted_index import build_index
 
 from config import (
     DEFAULT_SEARCH_LIMIT,
@@ -26,8 +26,10 @@ def main() -> None:
     match args.command:
 
         case "build":
+            # As long as the data doesn't change, 
+            # we don't need to rebuild the index before every search
             print("Building inverted index...")
-            build_command()
+            build_index()
             print("Inverted index built successfully.")
 
         case "search":

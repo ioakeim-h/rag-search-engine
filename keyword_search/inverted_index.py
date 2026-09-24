@@ -7,7 +7,9 @@ from keyword_search.text import tokenize_text
 
 from config import (
     MOVIES_PATH,
-    CACHE_PATH
+    CACHE_PATH,
+    CACHE_INDEX,
+    CACHE_DOCMAP
 )
 
 
@@ -64,21 +66,35 @@ class InvertedIndex:
         os.makedirs(CACHE_PATH, exist_ok=True)
 
         # Save index and docmap attributes to disk
-        index_path = os.path.join(CACHE_PATH, "index.pkl")
-        docmap_path = os.path.join(CACHE_PATH, "docmap.pkl")
+        # index_path = os.path.join(CACHE_PATH, "index.pkl")
+        # docmap_path = os.path.join(CACHE_PATH, "docmap.pkl")
 
-        with open(index_path, "wb") as file:
+        with open(CACHE_INDEX, "wb") as file:
             pickle.dump(self.index, file)
 
-        with open(docmap_path, "wb") as file:
+        with open(CACHE_DOCMAP, "wb") as file:
             pickle.dump(self.docmap, file)
 
 
-def build_command():
+    def load(self):
+        if not os.path.exists(CACHE_INDEX):
+            raise FileNotFoundError(f"Path not found: {CACHE_INDEX}")
+
+        if not os.path.exists(CACHE_DOCMAP):
+            raise FileNotFoundError(f"Path not found: {CACHE_DOCMAP}")
+
+        # Load index and docmap from disk
+        with open(CACHE_INDEX, "rb") as file:
+            index = pickle.load(file)
+
+        with open(CACHE_DOCMAP, "rb") as file:
+            docmap = pickle.load(file)
+
+    
+
+
+def build_index():
     idx = InvertedIndex()
     idx.build()
     idx.save()
 
-    # Test
-    docs = idx.get_documents("merida")
-    print(f"First document for token 'merida' = {docs[0]}")
