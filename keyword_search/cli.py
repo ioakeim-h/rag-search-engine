@@ -4,11 +4,11 @@ import argparse
 
 from utils import read_json
 from keyword_search.search import search_by_keyword
-from keyword_search.inverted_index import build_index
+from keyword_search.inverted_index import build_index, InvertedIndex
 
 from config import (
     DEFAULT_SEARCH_LIMIT,
-    MOVIES_PATH,
+    CACHE_PATH
 )
 
 
@@ -33,14 +33,19 @@ def main() -> None:
             print("Inverted index built successfully.")
 
         case "search":
+            print("Loading inverted index...")
+            idx = InvertedIndex()
+            
+            try: 
+                idx.load()
+            except FileNotFoundError:
+                raise(f"Index files missing from: {CACHE_PATH}")
+
             print(f"Searching for: {args.query}")
-            movies = read_json(MOVIES_PATH)["movies"]
-         
             results = search_by_keyword(
-                data = movies,
+                inverted_index = idx,
                 search_query = args.query,
-                search_target = "title",
-                search_limit = DEFAULT_SEARCH_LIMIT,
+                search_limit = DEFAULT_SEARCH_LIMIT
             )
 
             for i, item in enumerate(results):

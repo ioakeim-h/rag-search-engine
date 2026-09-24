@@ -85,12 +85,10 @@ class InvertedIndex:
 
         # Load index and docmap from disk
         with open(CACHE_INDEX, "rb") as file:
-            index = pickle.load(file)
+            self.index = pickle.load(file)
 
         with open(CACHE_DOCMAP, "rb") as file:
-            docmap = pickle.load(file)
-
-    
+            self.docmap = pickle.load(file)
 
 
 def build_index():
