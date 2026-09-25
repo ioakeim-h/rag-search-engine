@@ -9,7 +9,9 @@ from lib.utils import read_json
 from config import (
     STOPWORDS_PATH,
     MOVIES_PATH,
-    CACHE_PATH
+    CACHE_PATH,
+    CACHE_INDEX,
+    CACHE_DOCMAP
 )
 
 
@@ -66,45 +68,84 @@ class InvertedIndex:
         os.makedirs(CACHE_PATH, exist_ok=True)
 
         # Save index and docmap attributes to disk
-        index_path = os.path.join(CACHE_PATH, "index.pkl")
-        docmap_path = os.path.join(CACHE_PATH, "docmap.pkl")
-
-        with open(index_path, "wb") as file:
+        with open(CACHE_INDEX, "wb") as file:
             pickle.dump(self.index, file)
 
-        with open(docmap_path, "wb") as file:
+        with open(CACHE_DOCMAP, "wb") as file:
             pickle.dump(self.docmap, file)
 
 
-def build_command():
+    def load(self):
+        if not os.path.exists(CACHE_INDEX):
+            raise FileNotFoundError(f"Path not found: {CACHE_INDEX}")
+
+        if not os.path.exists(CACHE_DOCMAP):
+            raise FileNotFoundError(f"Path not found: {CACHE_DOCMAP}")
+
+        # Load index and docmap from disk
+        with open(CACHE_INDEX, "rb") as file:
+            self.index = pickle.load(file)
+
+        with open(CACHE_DOCMAP, "rb") as file:
+            self.docmap = pickle.load(file)
+
+
+def build_index():
     idx = InvertedIndex()
     idx.build()
     idx.save()
 
-    # Test
-    docs = idx.get_documents("merida")
-    print(f"First document for token 'merida' = {docs[0]}")
 
+def search_by_keyword(inverted_index: InvertedIndex, search_query: str, search_limit: int) -> list[dict]:
+    """
+    Search the inverted index for documents matching any token in the query.
 
-def search_by_keyword(data: list[dict], search_query: str, search_target: str, search_limit: int) -> list[dict]:
-    results = []
-    query_tokens = tokenize_text(search_query) 
+    The query is tokenized the same way documents were tokenized when the
+    index was built, ensuring consistent matching (e.g. lowercasing, stemming).
+    For each token, matching document IDs are looked up directly in the
+    inverted index rather than scanning every document.
+
+    Documents that match multiple query tokens are only included once.
+    Matching stops as soon as `search_limit` results have been collected.
+
+    Args:
+        inverted_index: A loaded InvertedIndex containing the token -> doc ID
+            mapping and the doc ID -> document lookup (docmap).
+        search_query: The raw search string provided by the user.
+        search_limit: The maximum number of results to return.
+
+    Returns:
+        A list of document dicts, ordered by the order in which their
+        matching tokens were found in the query and index lookups.
+    """
+    seen = set()       # tracks which doc_ids we've already added, fast lookup
+    results = []       # the ordered list of actual dicts to return
     
-    for item in data:
+    stop = False       # signals both loops to exit once we've hit search_limit
+    query_tokens = tokenize_text(search_query) 
 
-        # Truncate returned output
-        if len(results) == search_limit:
-            break
+    for t in query_tokens:
+        # Look up every document that contains this token
+        doc_ids: list[int] = inverted_index.get_documents(t)
+        
+        for id in doc_ids:
+            # Skip documents already matched by a previous token
+            if id in seen:
+                continue
+            
+            seen.add(id)
+            results.append(inverted_index.docmap[id])
 
-        target_tokens = tokenize_text(item[search_target])  
-
-        # Find query words in target 
-        for q in query_tokens:
-            if q in target_tokens:
-                results.append(item) 
+            # Truncate returned output
+            if len(results) == search_limit:
+                stop = True
                 break
 
+        if stop:
+            break
+
     return results
+    
 
 
 def clean_text(text: str) -> str:
