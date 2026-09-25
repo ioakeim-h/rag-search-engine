@@ -35,5 +35,13 @@ def tokenize_text(text: str) -> list[str]:
     return stemmed_tokens
 
 
+def tokenize_term(term: str) -> str:
+    """Tokenize a single term"""
+    tokens: list[str] = tokenize_text(term)
+    if len(tokens) != 1:
+        raise ValueError(f"Expected a single token, got {len(tokens)}")
+    return tokens[0]
+
+
 STOPWORDS = fetch_stopwords()
 stemmer = PorterStemmer()

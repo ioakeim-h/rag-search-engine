@@ -1,6 +1,6 @@
 import os
 import pickle
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from utils import read_json
 from keyword_search.text import tokenize_text
@@ -9,7 +9,8 @@ from config import (
     MOVIES_PATH,
     CACHE_PATH,
     CACHE_INDEX,
-    CACHE_DOCMAP
+    CACHE_DOCMAP,
+    CACHE_TERM_FREQ
 )
 
 
@@ -24,10 +25,14 @@ class InvertedIndex:
     def __init__(self):
         # Maps tokens to sets of document IDs
         # set() excludes duplicates during __add_document method
-        self.index = defaultdict(set)
+        self.index: defaultdict[str, set[int]] = defaultdict(set)
 
         # Maps document IDs to their full document objects (movie dicts)
-        self.docmap = {}
+        self.docmap: dict[int, dict] = {}
+
+        # Maps document IDs to their term frequencies
+        # measures how often a word occurs in a document
+        self.term_frequencies: defaultdict[int, Counter[str]] = defaultdict(Counter)
 
 
     def __add_document(self, doc_id: int, text: str):
@@ -37,6 +42,9 @@ class InvertedIndex:
         for t in tokens:
             self.index[t].add(doc_id)
 
+        # Count how many times a term appears in the doc 
+        self.term_frequencies[doc_id].update(tokens)
+
 
     def get_documents(self, term: str) -> list[int]:
         """
@@ -45,6 +53,11 @@ class InvertedIndex:
         """
         ids = self.index.get(term, set())
         return sorted(ids)
+
+
+    def get_term_freq(self, doc_id: int, term: str) -> int:
+        count = self.term_frequencies[doc_id][term]
+        return count
 
 
     def build(self):
@@ -65,15 +78,15 @@ class InvertedIndex:
         # Create cache dir if not exists
         os.makedirs(CACHE_PATH, exist_ok=True)
 
-        # Save index and docmap attributes to disk
-        # index_path = os.path.join(CACHE_PATH, "index.pkl")
-        # docmap_path = os.path.join(CACHE_PATH, "docmap.pkl")
-
+        # Save attributes to disk
         with open(CACHE_INDEX, "wb") as file:
             pickle.dump(self.index, file)
 
         with open(CACHE_DOCMAP, "wb") as file:
             pickle.dump(self.docmap, file)
+
+        with open(CACHE_TERM_FREQ, "wb") as file:
+            pickle.dump(self.term_frequencies, file)
 
 
     def load(self):
@@ -83,12 +96,18 @@ class InvertedIndex:
         if not os.path.exists(CACHE_DOCMAP):
             raise FileNotFoundError(f"Path not found: {CACHE_DOCMAP}")
 
-        # Load index and docmap from disk
+        if not os.path.exists(CACHE_TERM_FREQ):
+            raise FileNotFoundError(f"Path not found: {CACHE_TERM_FREQ}")
+
+        # Load from disk
         with open(CACHE_INDEX, "rb") as file:
             self.index = pickle.load(file)
 
         with open(CACHE_DOCMAP, "rb") as file:
             self.docmap = pickle.load(file)
+
+        with open(CACHE_TERM_FREQ, "rb") as file:
+            self.term_frequencies = pickle.load(file)
 
 
 def build_index():
